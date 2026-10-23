@@ -1,0 +1,100 @@
+# Custom paired-dataset configuration
+#
+# Provide your own dataset_root with the layout:
+#
+#   dataset_root/
+#       train/
+#           degraded/
+#           gt/
+#       val/
+#           degraded/
+#           gt/
+#       test/
+#           degraded/
+#           gt/
+#
+# The LPUDC architecture is unchanged. Only `dataset.root` (and optionally
+# training length / batch size for your hardware) needs to be edited.
+#
+# Before training, run:
+#   python tools/dataset_analysis.py --config configs/custom_dataset.yaml
+# which writes docs/DATASET_REPORT.md and a visualization grid.
+
+experiment:
+  name: lpudc_custom
+  output_dir: results/lpudc_custom
+  checkpoint_dir: checkpoints/lpudc_custom
+  log_dir: logs/lpudc_custom
+  seed: 42
+  device: auto
+  note: Custom paired image-restoration dataset (architecture unchanged).
+
+dataset:
+  name: custom
+  # USER: set this to your dataset root
+  root: data/custom
+  degraded_dirname: degraded
+  gt_dirname: gt
+  image_size: null          # null = full resolution
+  crop_size: null           # set e.g. 256 if your images are large
+  random_crop: false
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+
+model:
+  pyramid_levels: 3
+  in_channels: 3
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 2
+  debug_shapes: false
+
+loss:
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean
+
+training:
+  batch_size: 1
+  iterations: 100000
+  num_workers: 0
+  log_interval: 50
+  val_interval: 1000
+  save_interval: 5000
+  vis_interval: 2000
+  grad_clip: null
+  amp: false
+  gradient_accumulation: 1
+  gradient_checkpointing: false
+  resume: null
+
+optimization:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002
+  min_lr: 0.000001
+  weight_decay: 0.0
+  scheduler: cosine_annealing
+
+evaluation:
+  metrics: [PSNR, SSIM, LPIPS, DISTS]
+  lpips_net: alex
+  enable_lpips: true
+  enable_dists: true
+  save_visualizations: true
+  max_vis_images: 30

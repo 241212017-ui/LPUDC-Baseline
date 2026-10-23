@@ -1,0 +1,103 @@
+# LPUDC reproduction config — POLED dataset
+# Paper: Ding et al., Neurocomputing 655 (2025) 131442
+#
+# PAPER FACT values are used wherever the paper states them explicitly.
+# Architecture widths that the paper does NOT specify are engineering
+# assumptions documented in docs/PAPER_SPECIFICATION.md.
+
+experiment:
+  name: lpudc_poled
+  output_dir: results/lpudc_poled
+  checkpoint_dir: checkpoints/lpudc_poled
+  log_dir: logs/lpudc_poled
+  seed: 42
+  device: auto            # auto | cpu | cuda
+  note: >
+    Official reproduction configuration. Do NOT silently change paper-stated
+    hyperparameters. If your GPU cannot fit full-resolution 1024x2048 with
+    batch size 1, use configs/lpudc_poled_debug.yaml instead.
+
+dataset:
+  name: POLED
+  # USER: set this to your POLED root containing train/val/test splits.
+  root: data/POLED
+  degraded_dirname: degraded
+  gt_dirname: gt
+  image_size: null        # null = full resolution (PAPER FACT)
+  crop_size: null
+  random_crop: false
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5  # PAPER FACT: random horizontal flip
+    vertical_flip: 0.5    # PAPER FACT: random vertical flip
+
+model:
+  # PAPER FACT: 3-level Laplacian pyramid (primary configuration)
+  pyramid_levels: 3
+  in_channels: 3
+  # Engineering assumptions (paper does not specify widths):
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001          # PAPER FACT: eps typically 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 2          # 0=none, 1=concat (ablation), 2=DGF (full LPUDC)
+  debug_shapes: false
+
+loss:
+  # PAPER FACT: L = L_con + lambda * L_pyr, lambda = 0.5
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean         # engineering assumption (see PAPER_SPECIFICATION.md)
+
+training:
+  # PAPER FACT values below:
+  batch_size: 1
+  iterations: 300000      # 300K
+  num_workers: 0
+  log_interval: 50
+  val_interval: 1000
+  save_interval: 5000
+  vis_interval: 2000
+  grad_clip: null         # paper does not specify
+  amp: false              # paper does not specify AMP; keep off for fidelity
+  gradient_accumulation: 1
+  gradient_checkpointing: false
+  resume: null            # path to latest.pth to resume from
+
+optimization:
+  # PAPER FACT:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002              # 2e-4
+  min_lr: 0.000001        # 1e-6
+  weight_decay: 0.0       # not specified in paper; Adam default assumed 0
+  scheduler: cosine_annealing
+  # Cosine annealing from lr to min_lr over `iterations`, stepped per-iteration.
+
+evaluation:
+  # PAPER FACT metrics; directions:
+  #   PSNR  higher is better
+  #   SSIM  higher is better
+  #   LPIPS lower is better
+  #   DISTS lower is better
+  metrics: [PSNR, SSIM, LPIPS, DISTS]
+  lpips_net: alex         # paper does not specify backbone
+  enable_lpips: true
+  enable_dists: true
+  save_visualizations: true
+  max_vis_images: 30
+
+# Paper-reported reference targets (NOT used by any code path for scoring).
+# POLED LPUDC: PSNR 33.99, SSIM 0.9629, LPIPS 0.1678, DISTS 0.1399
+# Params ~4.0M, inference ~0.07s on RTX 3090.

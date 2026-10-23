@@ -1,0 +1,86 @@
+# LPUDC reproduction config — TOLED dataset (real data layout)
+# Paper: Ding et al., Neurocomputing 655 (2025) 131442
+
+experiment:
+  name: lpudc_toled_real
+  output_dir: results/lpudc_toled_real
+  checkpoint_dir: checkpoints/lpudc_toled_real
+  log_dir: logs/lpudc_toled_real
+  seed: 42
+  device: auto
+  note: >
+    Real data configuration using downloaded POLED/TOLED zips.
+    Data layout: Train/Toled/{LQ,HQ}, toled/{val,test}_*.mat
+
+dataset:
+  loader: poled_toled
+  name: TOLED
+  root: data
+  dataset_name: toled
+  image_size: null
+  crop_size: null           # full resolution as in the paper
+  random_crop: false
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+
+model:
+  pyramid_levels: 3
+  in_channels: 3
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 2
+  debug_shapes: false
+
+loss:
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean
+
+training:
+  batch_size: 1
+  iterations: 300000
+  num_workers: 0
+  log_interval: 50
+  val_interval: 1000
+  save_interval: 5000
+  vis_interval: 2000
+  grad_clip: null
+  amp: false                 # paper does not specify mixed precision
+  gradient_accumulation: 1
+  gradient_checkpointing: false
+  resume: null
+
+optimization:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002
+  min_lr: 0.000001
+  weight_decay: 0.0
+  scheduler: cosine_annealing
+
+evaluation:
+  metrics: [PSNR, SSIM, LPIPS, DISTS]
+  lpips_net: alex
+  enable_lpips: true
+  enable_dists: true
+  save_visualizations: true
+  max_vis_images: 30
+
+# Paper-reported reference targets (NOT used by any code path for scoring).
+# TOLED LPUDC: PSNR 38.62, SSIM 0.9805, LPIPS 0.0893, DISTS 0.0858
+# Params ~4.0M, inference ~0.07s on RTX 3090.

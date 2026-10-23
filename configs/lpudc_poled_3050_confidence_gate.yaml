@@ -1,0 +1,81 @@
+# Confidence-gated DGF experiment matched to the 3050 debug baseline.
+# Patch-based development experiment; NOT paper-comparable.
+
+experiment:
+  name: lpudc_poled_3050_confidence_gate
+  output_dir: results/lpudc_poled_3050_confidence_gate
+  checkpoint_dir: checkpoints/lpudc_poled_3050_confidence_gate
+  log_dir: logs/lpudc_poled_3050_confidence_gate
+  seed: 42
+  device: cuda
+  note: Confidence-gated DGF ablation using the same 256x256 debug protocol.
+
+dataset:
+  loader: poled_toled
+  name: POLED
+  root: data
+  dataset_name: poled
+  image_size: null
+  crop_size: 256
+  random_crop: true
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+
+model:
+  pyramid_levels: 3
+  in_channels: 3
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 2
+  confidence_gate: true
+  debug_shapes: false
+
+loss:
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean
+
+training:
+  batch_size: 1
+  iterations: 10000
+  num_workers: 0
+  log_interval: 10
+  val_interval: 500
+  save_interval: 500
+  vis_interval: 500
+  grad_clip: 1.0
+  amp: true
+  gradient_accumulation: 1
+  gradient_checkpointing: true
+  resume: null
+
+optimization:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002
+  min_lr: 0.000001
+  weight_decay: 0.0
+  scheduler: cosine_annealing
+
+evaluation:
+  metrics: [PSNR, SSIM]
+  lpips_net: alex
+  enable_lpips: false
+  enable_dists: false
+  save_visualizations: true
+  max_vis_images: 4

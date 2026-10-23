@@ -1,0 +1,81 @@
+﻿# B. Multi-scale interaction without guided filtering (direct concat, paper row 2)
+# Generated ablation config. Paper-stated training hyperparameters preserved.
+# Dataset root must be set by the user (POLED or TOLED).
+
+experiment:
+  name: ablation_b_concat_no_dgf
+  output_dir: results/ablation_b_concat_no_dgf
+  checkpoint_dir: checkpoints/ablation_b_concat_no_dgf
+  log_dir: logs/ablation_b_concat_no_dgf
+  seed: 42
+  device: auto
+  note: B. Multi-scale interaction without guided filtering (direct concat, paper row 2)
+
+dataset:
+  name: POLED
+  root: data/POLED
+  degraded_dirname: degraded
+  gt_dirname: gt
+  image_size: null
+  crop_size: null
+  random_crop: false
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+
+model:
+  pyramid_levels: 3
+  in_channels: 3
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 1
+  debug_shapes: false
+
+loss:
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean
+
+training:
+  batch_size: 1
+  iterations: 300000
+  num_workers: 0
+  log_interval: 50
+  val_interval: 1000
+  save_interval: 5000
+  vis_interval: 2000
+  grad_clip: null
+  amp: false
+  gradient_accumulation: 1
+  gradient_checkpointing: false
+  resume: null
+
+optimization:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002
+  min_lr: 0.000001
+  weight_decay: 0.0
+  scheduler: cosine_annealing
+
+evaluation:
+  metrics: [PSNR, SSIM, LPIPS, DISTS]
+  lpips_net: alex
+  enable_lpips: true
+  enable_dists: true
+  save_visualizations: true
+  max_vis_images: 30

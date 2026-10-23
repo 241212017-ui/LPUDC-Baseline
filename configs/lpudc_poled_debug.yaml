@@ -1,0 +1,91 @@
+# DEBUG / LOW-MEMORY configuration for POLED
+#
+# ⚠️ THIS IS NOT THE PAPER'S REPRODUCTION CONFIGURATION.
+#
+# Use this ONLY if full-resolution 1024x2048 training with batch size 1
+# causes CUDA OOM on your hardware. The paper's official settings live in
+# configs/lpudc_poled.yaml and must remain unchanged.
+#
+# Deviations from the paper (clearly labeled):
+#   - center crop to 512x512 (paper: full resolution 1024x2048)
+#   - fewer iterations (paper: 300,000)
+#   - optional AMP (paper does not mention AMP)
+#   - results from this config are NOT comparable to paper numbers.
+
+experiment:
+  name: lpudc_poled_debug
+  output_dir: results/lpudc_poled_debug
+  checkpoint_dir: checkpoints/lpudc_poled_debug
+  log_dir: logs/lpudc_poled_debug
+  seed: 42
+  device: auto
+  note: DEBUG/LOW-MEMORY config — not the paper reproduction setup.
+
+dataset:
+  name: POLED_DEBUG
+  root: data/POLED
+  degraded_dirname: degraded
+  gt_dirname: gt
+  image_size: null
+  crop_size: 512           # DEBUG ONLY — paper uses full resolution
+  random_crop: true        # DEBUG ONLY
+  strict: true
+  augmentation:
+    horizontal_flip: 0.5
+    vertical_flip: 0.5
+
+model:
+  pyramid_levels: 3
+  in_channels: 3
+  lf_base_channels: 32
+  lf_encoder_channels: [32, 64, 128]
+  lf_stem_drb_count: 2
+  lf_stem_dilations: [1, 2]
+  lf_guidance_channels: 64
+  dgf_kernel_size: 3
+  dgf_eps: 0.001
+  dgf_coeff_channels: 32
+  hf_base_channels: 32
+  hf_unshuffle_factor: 2
+  hf_pre_drb_count: 2
+  hf_pre_drb_dilations: [1, 2]
+  hf_hrnet_drb_count: 4
+  hf_hrnet_drb_dilations: [1, 2, 4]
+  fusion_mode: 2
+  debug_shapes: true
+
+loss:
+  pyramid_weight: 0.5
+  use_pyramid_loss: true
+  reduction: mean
+
+training:
+  batch_size: 1
+  iterations: 20000        # DEBUG ONLY — paper: 300000
+  num_workers: 0
+  log_interval: 20
+  val_interval: 500
+  save_interval: 1000
+  vis_interval: 500
+  grad_clip: 1.0
+  amp: true                # DEBUG ONLY — paper does not mention AMP
+  gradient_accumulation: 1
+  gradient_checkpointing: true
+  resume: null
+
+optimization:
+  optimizer: adam
+  beta1: 0.9
+  beta2: 0.999
+  lr: 0.0002
+  min_lr: 0.000001
+  weight_decay: 0.0
+  scheduler: cosine_annealing
+
+evaluation:
+  metrics: [PSNR, SSIM, LPIPS, DISTS]
+  lpips_net: alex
+  enable_lpips: true
+  enable_dists: true
+  save_visualizations: true
+  max_vis_images: 10
